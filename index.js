@@ -69,6 +69,11 @@ app.post('/send-to-docusign', async (req, res) => {
         }
 
         // Send the received VBCS payload to DocuSign
+       const accessToken = req.session.access_token;
+         if (!accessToken) {
+            return res.status(401).json({ error: "Unauthorized: No access token" });
+         }
+
         const response = await axios.post(DOCUSIGN_API_URL, vbcsPayload, {
             headers: {
                 "Authorization": `Bearer ${accessToken}`,
