@@ -168,7 +168,9 @@ async function checkToken(request) {
    } else {
       console.log("Generating a new access token");
       let dsApiClient = new docusign.ApiClient();
+      console.log("Here1");
       dsApiClient.setBasePath(process.env.BASE_PATH);
+      console.log("Here2");
       const results = await dsApiClient.requestJWTUserToken(
          process.env.INTEGRATION_KEY,
          process.env.USER_ID,
@@ -176,6 +178,7 @@ async function checkToken(request) {
          fs.readFileSync(path.join(__dirname, "private.key")),
          3600
       );
+      console.log("Here3");
       console.log(results.body);
       request.session.access_token = results.body.access_token;
       request.session.expires_at = Date.now() + (results.body.expires_in - 60) * 1000;
