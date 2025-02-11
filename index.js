@@ -172,7 +172,7 @@ async function checkToken(request) {
       const results = await dsApiClient.requestJWTUserToken(
          process.env.INTEGRATION_KEY,
          process.env.USER_ID,
-         "[signature, cors]",
+         "signature",
          fs.readFileSync(path.join(__dirname, "private.key")),
          3600
       );
