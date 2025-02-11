@@ -57,7 +57,32 @@ app.get("/download-document", async (req, res) => {
 
    const url = `${baseUrl}/v2.1/accounts/${accountId}/envelopes/${envelopeId}/documents/${documentId}`;
 
-   // 🔹 Receive payload from VBCS and send it to DocuSign
+   try {
+      const fetch = (await import("node-fetch")).default; // Import node-fetch dynamically
+      const response = await fetch(url, {
+         method: "GET",
+         headers: {
+            "Authorization": `Bearer ${accessToken}`,
+            "Accept": "application/pdf"
+         }
+      });
+
+      if (!response.ok) {
+         throw new Error(`Error: ${response.statusText}`);
+      }
+
+      // Forward the PDF response to the client
+      const pdfBuffer = await response.buffer();
+      res.setHeader("Content-Disposition", "attachment; filename=signed_document.pdf");
+      res.setHeader("Content-Type", "application/pdf");
+      res.send(pdfBuffer);
+   } catch (error) {
+      console.error("Error downloading document:", error);
+      res.status(500).send("Failed to download document.");
+   }
+});
+
+// 🔹 Receive payload from VBCS and send it to DocuSign
 app.post('/send-to-docusign', async (req, res) => {
     try {
         const vbcsPayload = req.body; // Receive payload from VBCS
@@ -87,31 +112,6 @@ app.post('/send-to-docusign', async (req, res) => {
         console.error("Error sending to DocuSign:", error.response ? error.response.data : error.message);
         res.status(500).json({ error: "Failed to send data to DocuSign", details: error.response ? error.response.data : error.message });
     }
-});
-
-   try {
-      const fetch = (await import("node-fetch")).default; // Import node-fetch dynamically
-      const response = await fetch(url, {
-         method: "GET",
-         headers: {
-            "Authorization": `Bearer ${accessToken}`,
-            "Accept": "application/pdf"
-         }
-      });
-
-      if (!response.ok) {
-         throw new Error(`Error: ${response.statusText}`);
-      }
-
-      // Forward the PDF response to the client
-      const pdfBuffer = await response.buffer();
-      res.setHeader("Content-Disposition", "attachment; filename=signed_document.pdf");
-      res.setHeader("Content-Type", "application/pdf");
-      res.send(pdfBuffer);
-   } catch (error) {
-      console.error("Error downloading document:", error);
-      res.status(500).send("Failed to download document.");
-   }
 });
 
 // Function to get Docusign API instance
