@@ -1,4 +1,5 @@
 const express = require("express");
+const axios = require('axios');
 const path = require("path");
 const bodyParser = require("body-parser");
 const dotenv = require("dotenv");
@@ -19,6 +20,9 @@ app.use(session({
    resave: true,
    saveUninitialized: true,
 }));
+
+const DOCUSIGN_API_URL = "https://demo.docusign.net/restapi/v2.1/accounts/e39a986e-3367-4862-9a5e-1ad643311802/envelopes";
+// const DOCUSIGN_ACCESS_TOKEN = "YOUR_ACCESS_TOKEN"; // Store securely, use OAuth if possible
 
 // API to create an envelope and generate signing URL
 app.post("/form", async (request, response) => {
@@ -52,6 +56,33 @@ app.get("/download-document", async (req, res) => {
    const documentId = "1"; // Change if needed
 
    const url = `${baseUrl}/v2.1/accounts/${accountId}/envelopes/${envelopeId}/documents/${documentId}`;
+
+   // 🔹 Receive payload from VBCS and send it to DocuSign
+app.post('/send-to-docusign', async (req, res) => {
+    try {
+        const vbcsPayload = req.body; // Receive payload from VBCS
+        console.log("Received VBCS Payload:", JSON.stringify(vbcsPayload, null, 2));
+
+        // Check if payload is valid
+        if (!vbcsPayload || Object.keys(vbcsPayload).length === 0) {
+            return res.status(400).json({ error: "Invalid or empty payload received from VBCS" });
+        }
+
+        // Send the received VBCS payload to DocuSign
+        const response = await axios.post(DOCUSIGN_API_URL, vbcsPayload, {
+            headers: {
+                "Authorization": `Bearer ${accessToken}`,
+                "Content-Type": "application/json"
+            }
+        });
+
+        console.log("DocuSign Response:", response.data);
+        res.status(200).json(response.data); // Send DocuSign's response back to VBCS
+    } catch (error) {
+        console.error("Error sending to DocuSign:", error.response ? error.response.data : error.message);
+        res.status(500).json({ error: "Failed to send data to DocuSign", details: error.response ? error.response.data : error.message });
+    }
+});
 
    try {
       const fetch = (await import("node-fetch")).default; // Import node-fetch dynamically
